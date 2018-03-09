@@ -1,7 +1,7 @@
 {
   "manifest_version": 2,
   "name": "Simple default site zoom changer",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Change default site zoom from 100%.",
   "author": "makitaaaaa",
   "applications": {
@@ -26,6 +26,7 @@
   },
   "permissions": [
     "tabs",
-    "storage"
+    "storage",
+    "webNavigation"
   ]
 }

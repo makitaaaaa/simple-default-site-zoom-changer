@@ -18,24 +18,19 @@
   /** @type {Set<number>} */
   let addonChangeZoomTabIdSet = new Set();
 
-  /**
-   * @param {number} tabId 
-   * @param {object} changeInfo 
-   * @param {browser.tabs.Tab} tab 
-   */
-  const onTabUpdated = async (tabId, changeInfo, tab) => {
-    try {
-      if (isInvalidUrl(changeInfo)) {
-        return;
-      }
-      if (isDefaultZoomFactor(commonSettings.zoomLevelFactor)) {
-        return;
-      }
-      if (tab.status !== "loading") {
-        return;
-      }
+  /** @type {Set<number>} */
+  let userZoomStatusTabIdSet = new Set();
 
-      let hostname = getHostname(changeInfo.url);
+  /**
+   * @param {object} details 
+   */
+  const onWebNavigationDOMContentLoaded = async (details) => {
+    if (details.frameId !== 0) {
+      return;
+    }
+    let tabId = details.tabId;
+    try {
+      let hostname = getHostname(details.url);
       let zoomFactor = await browser.tabs.getZoom(tabId);
       if (!isDefaultZoomFactor(zoomFactor)) {
         return;
@@ -48,24 +43,35 @@
       }
       // not exists host setting (addon default zoom)
       addonChangeZoomTabIdSet.add(tabId);
-      browser.tabs.setZoom(tabId, commonSettings.zoomLevelFactor);
+      if (!isDefaultZoomFactor(commonSettings.zoomLevelFactor)) {
+        await browser.tabs.setZoom(tabId, commonSettings.zoomLevelFactor);
+      }
     } catch (e) {
       logging(e);
+    } finally {
+      userZoomStatusTabIdSet.add(tabId);
     }
   }
 
   /**
    * @param {ZoomChangeInfo} zoomChangeInfo 
    */
-  const onZoomChanged = async (zoomChangeInfo) => {
+  const onZoomChanged = (zoomChangeInfo) => {
+    if (!userZoomStatusTabIdSet.has(zoomChangeInfo.tabId)) {
+      return;
+    }
+    onZoomChangedImplements(zoomChangeInfo);
+  }
+
+  /**
+   * @param {ZoomChangeInfo} zoomChangeInfo 
+   */
+  const onZoomChangedImplements = async (zoomChangeInfo) => {
     try {
       let tabId = zoomChangeInfo.tabId;
       let oldZoomFactor = zoomChangeInfo.oldZoomFactor;
       let newZoomFactor = zoomChangeInfo.newZoomFactor;
-      if (isDefaultZoomFactor(oldZoomFactor) && isAddonZoomFactor(newZoomFactor) && addonChangeZoomTabIdSet.delete(tabId)) {
-        // from addon
-        return;
-      }
+
       let tab = await browser.tabs.get(tabId);
       if (isInvalidUrl(tab)) {
         return;
@@ -88,6 +94,24 @@
   }
 
   /**
+   * @param {object} details 
+   */
+  const onWebNavigationBeforeNavigate = (details) => {
+    if (details.frameId !== 0) {
+      return;
+    }
+    userZoomStatusTabIdSet.delete(details.tabId);
+  }
+
+  /**
+   * @param {number} tabId 
+   * @param {object} removeInfo 
+   */
+  const onTabRemoved = (tabId, removeInfo) => {
+    userZoomStatusTabIdSet.delete(tabId);
+  }
+
+  /**
    * @param {object} urlObject 
    * @param {string} urlObject.url
    * @return {boolean}
@@ -96,13 +120,7 @@
     if (!urlObject.hasOwnProperty("url")) {
       return true;
     }
-    if (urlObject.url.startsWith("about:")) {
-      return true;
-    }
-    if (urlObject.url.startsWith("file:")) {
-      return true;
-    }
-    return false;
+    return !urlObject.url.startsWith("http");
   }
 
   /**
@@ -111,14 +129,6 @@
    */
   const isDefaultZoomFactor = (zoomFactor) => {
     return zoomFactor === ZOOM_FACTOR_DEFAULT;
-  }
-
-  /**
-   * @param {number} zoomFactor 
-   * @return {boolean} 
-   */
-  const isAddonZoomFactor = (zoomFactor) => {
-    return zoomFactor === commonSettings.zoomLevelFactor;
   }
 
   /**
@@ -160,8 +170,17 @@
         zoomSiteMap.set(siteName, zoomSiteSettings[siteName]);
       }
 
-      browser.tabs.onUpdated.addListener(onTabUpdated);
+      /** @type {browser.webNavigation.EventUrlFilters} */
+      const URL_FILTER = {
+        url: [{
+          schemes: ["http", "https"]
+        }]
+      }
+
+      browser.webNavigation.onDOMContentLoaded.addListener(onWebNavigationDOMContentLoaded, URL_FILTER);
+      browser.webNavigation.onBeforeNavigate.addListener(onWebNavigationBeforeNavigate);
       browser.tabs.onZoomChange.addListener(onZoomChanged);
+      browser.tabs.onRemoved.addListener(onTabRemoved);
       browser.storage.onChanged.addListener(onStorageChange);
     } catch (e) {
       logging(e);
