@@ -15,8 +15,6 @@
   /** @type {CommonSettings} */
   let commonSettings = {};
   let zoomSiteSettings = {};
-  /** @type {Set<number>} */
-  let addonChangeZoomTabIdSet = new Set();
 
   /** @type {Set<number>} */
   let userZoomStatusTabIdSet = new Set();
@@ -42,7 +40,6 @@
         return;
       }
       // not exists host setting (addon default zoom)
-      addonChangeZoomTabIdSet.add(tabId);
       if (!isDefaultZoomFactor(commonSettings.zoomLevelFactor)) {
         await browser.tabs.setZoom(tabId, commonSettings.zoomLevelFactor);
       }
