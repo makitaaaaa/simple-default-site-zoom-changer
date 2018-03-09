@@ -18,9 +18,9 @@
    id="svg8"
    sodipodi:docname="icon-base.svg"
    inkscape:version="0.92.2 (5c3e80d, 2017-08-06)"
-   inkscape:export-filename="C:\Data\WebExtensions\zp\icons\icon-96.png"
-   inkscape:export-xdpi="99.852577"
-   inkscape:export-ydpi="99.852577">
+   inkscape:export-filename="C:\Data\WebExtensions\zp\icons\icon-48.png"
+   inkscape:export-xdpi="49.926289"
+   inkscape:export-ydpi="49.926289">
   <metadata
      id="metadata14">
     <rdf:RDF>
@@ -48,9 +48,9 @@
      inkscape:window-height="1018"
      id="namedview10"
      showgrid="false"
-     inkscape:zoom="1.2784944"
-     inkscape:cx="-151.20061"
-     inkscape:cy="104.39207"
+     inkscape:zoom="7.2322565"
+     inkscape:cx="34.033099"
+     inkscape:cy="40.776263"
      inkscape:window-x="-8"
      inkscape:window-y="-8"
      inkscape:window-maximized="1"
@@ -84,7 +84,7 @@
      ry="493.88113" />
   <path
      sodipodi:type="spiral"
-     style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:307.14816284;stroke-miterlimit:4;stroke-dasharray:none"
+     style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:345.11030536;stroke-miterlimit:4;stroke-dasharray:none"
      id="path828"
      sodipodi:cx="8410.043"
      sodipodi:cy="10827.406"
@@ -110,13 +110,13 @@
      x="8360.8906"
      y="10661.847" />
   <circle
-     style="fill:none;stroke:#a25151;stroke-width:211.69311523;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;paint-order:markers fill stroke"
+     style="fill:none;stroke:#a0c238;stroke-width:211.69311523;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;paint-order:markers fill stroke"
      id="circle2"
      r="440.18262"
      cy="10263.754"
      cx="8196.8281" />
   <path
-     style="fill:none;stroke:#a25151;stroke-width:211.69311523;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+     style="fill:none;stroke:#a0c238;stroke-width:211.69311523;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
      inkscape:connector-curvature="0"
      id="path4"
      d="m 7335.4476,11152.057 531.4149,-531.416" />
@@ -132,19 +132,19 @@
          x="-55.338528"
          y="17.98991" /></flowRegion><flowPara
        id="flowPara824">a</flowPara></flowRoot>  <rect
-     style="opacity:1;fill:#ffffff;fill-opacity:1;stroke:#505050;stroke-width:132.29165649;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:3.67999983;stroke-dasharray:none;stroke-opacity:1;paint-order:normal"
+     style="opacity:1;fill:#ffffff;fill-opacity:1;stroke:#505050;stroke-width:132.29165649;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:3.67999983;stroke-dasharray:none;stroke-opacity:1;paint-order:normal"
      id="rect816-9"
      width="1066.9712"
      height="16.095058"
-     x="7882.3218"
+     x="7875.0054"
      y="9063.6084"
      ry="0" />
   <rect
-     style="opacity:1;fill:#ffffff;fill-opacity:1;stroke:#505050;stroke-width:126.15401459;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:3.67999983;stroke-dasharray:none;stroke-opacity:1;paint-order:normal"
+     style="opacity:1;fill:#ffffff;fill-opacity:1;stroke:#505050;stroke-width:126.15401459;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:3.67999983;stroke-dasharray:none;stroke-opacity:1;paint-order:normal"
      id="rect816-9-5"
      width="193.26889"
      height="22.224314"
-     x="9104.5488"
+     x="9111.8652"
      y="9060.54"
      ry="0" />
 </svg>
