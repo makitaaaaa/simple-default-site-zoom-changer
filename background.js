@@ -6,75 +6,48 @@
   /** @typedef {{zoomLevelFactor:number, zoomLevelInput:number}} CommonSettings */
   /** @typedef {{tabId:number,oldZoomFactor:number,newZoomFactor:number,zoomSettings:browser.tab.ZoomSettings}} ZoomChangeInfo */
 
-  /** @type {Map<string,number>} */
+  /** @type {Map<string,number>} host,zoomfactor(only x1) */
   let zoomSiteMap = new Map();
 
   /** @type {number} */
   const ZOOM_FACTOR_DEFAULT = 1;
 
+  /** @type {number} */
+  const ZOOM_EVENT_DELAY_MS = 500;
+
   /** @type {CommonSettings} */
   let commonSettings = {};
   let zoomSiteSettings = {};
 
-  /** @type {Set<number>} */
-  let userZoomStatusTabIdSet = new Set();
+  /** @type {Map<number, string>} tabId, host */
+  let userZoomStatusTabIdMap = new Map();
 
   /**
-   * @param {object} details 
-   */
-  const onWebNavigationDOMContentLoaded = async (details) => {
-    if (details.frameId !== 0) {
-      return;
-    }
-    let tabId = details.tabId;
-    try {
-      let hostname = getHostname(details.url);
-      let zoomFactor = await browser.tabs.getZoom(tabId);
-      if (!isDefaultZoomFactor(zoomFactor)) {
-        return;
-      }
-      // zoom x1 (default)
-      let hostZoomFactor = zoomSiteMap.get(hostname);
-      if (hostZoomFactor) {
-        // exists host setting (x1 zoom)
-        return;
-      }
-      // not exists host setting (addon default zoom)
-      if (!isDefaultZoomFactor(commonSettings.zoomLevelFactor)) {
-        await browser.tabs.setZoom(tabId, commonSettings.zoomLevelFactor);
-      }
-    } catch (e) {
-      logging(e);
-    } finally {
-      userZoomStatusTabIdSet.add(tabId);
-    }
-  }
-
-  /**
+   * handle zoom changed
    * @param {ZoomChangeInfo} zoomChangeInfo 
    */
   const onZoomChanged = (zoomChangeInfo) => {
-    if (!userZoomStatusTabIdSet.has(zoomChangeInfo.tabId)) {
+    let tabId = zoomChangeInfo.tabId;
+    let url = userZoomStatusTabIdMap.get(tabId);
+    if (!url) {
       return;
     }
-    onZoomChangedImplements(zoomChangeInfo);
-  }
+    let oldZoomFactor = zoomChangeInfo.oldZoomFactor;
+    let newZoomFactor = zoomChangeInfo.newZoomFactor;
 
-  /**
-   * @param {ZoomChangeInfo} zoomChangeInfo 
-   */
-  const onZoomChangedImplements = async (zoomChangeInfo) => {
-    try {
-      let tabId = zoomChangeInfo.tabId;
-      let oldZoomFactor = zoomChangeInfo.oldZoomFactor;
-      let newZoomFactor = zoomChangeInfo.newZoomFactor;
-
-      let tab = await browser.tabs.get(tabId);
-      if (isInvalidUrl(tab)) {
+    if (isInvalidUrl({url:url})) {
+      return;
+    }
+    let hostname = getHostname(url);
+    setTimeout(() => {
+      let currentUrl = userZoomStatusTabIdMap.get(tabId);
+      if (!currentUrl) {
         return;
       }
-      let hostname = getHostname(tab.url);
-
+      let currentHostname = getHostname(currentUrl);
+      if (hostname !== currentHostname) {
+        return;
+      }
       if (isDefaultZoomFactor(newZoomFactor)) {
         zoomSiteMap.set(hostname, newZoomFactor);
         zoomSiteSettings[hostname] = newZoomFactor;
@@ -83,32 +56,24 @@
         delete zoomSiteSettings[hostname];
       }
       if (isDefaultZoomFactor(newZoomFactor) || isDefaultZoomFactor(oldZoomFactor)) {
+        // save zoom settings (x1 zoom)
         setStorageItem(StorageKey.ZoomSite, zoomSiteSettings);
       }
-    } catch (e) {
-      logging(e);
-    }
+    }, ZOOM_EVENT_DELAY_MS);
+
   }
 
   /**
-   * @param {object} details 
-   */
-  const onWebNavigationBeforeNavigate = (details) => {
-    if (details.frameId !== 0) {
-      return;
-    }
-    userZoomStatusTabIdSet.delete(details.tabId);
-  }
-
-  /**
+   * handle tab removed
    * @param {number} tabId 
    * @param {object} removeInfo 
    */
   const onTabRemoved = (tabId, removeInfo) => {
-    userZoomStatusTabIdSet.delete(tabId);
+    userZoomStatusTabIdMap.delete(tabId);
   }
 
   /**
+   * check invalid url
    * @param {object} urlObject 
    * @param {string} urlObject.url
    * @return {boolean}
@@ -121,6 +86,7 @@
   }
 
   /**
+   * check default zoom factor (x1)
    * @param {number} zoomFactor 
    * @return {boolean} 
    */
@@ -129,6 +95,7 @@
   }
 
   /**
+   * get hostname
    * @param {string} strUrl URL
    */
   const getHostname = (strUrl) => {
@@ -137,6 +104,7 @@
   }
 
   /**
+   * handle storage changed
    * @param {browser.storage.StorageChange} changes 
    * @param {browser.storage.StorageArea} area 
    */
@@ -147,8 +115,60 @@
     commonSettings = changes.settings.newValue;
   }
 
+/**
+ * handle message
+ * @param {*} request 
+ * @param {*} sender 
+ * @param {*} sendResponse 
+ */
+const handleMessage = (request, sender, sendResponse) => {
+  if (request === null || request === undefined || !(request.to) || request.to !== "background") {
+    return false;
+  }
+  
+  if (request.from === "content" && request.method === "changeZoom") {
+    changeZoom(request, sender, sendResponse);
+    return false;
+  }
+  return false;
+}
+
+
+/**
+ * change zoom
+ * @param {*} request 
+ * @param {browser.runtime.MessageSender} sender 
+ * @param {*} sendResponse 
+ */
+const changeZoom = async (request, sender, sendResponse) => {
+  let senderTab = sender.tab;
+  let tabId = senderTab.id;
+  let url = sender.url;
+
+  try {
+    userZoomStatusTabIdMap.set(tabId, url);
+
+    let hostname = getHostname(url);
+    let zoomFactor = await browser.tabs.getZoom(tabId);
+    if (!isDefaultZoomFactor(zoomFactor)) {
+      return;
+    }
+    // zoom x1 (default)
+    let hostZoomFactor = zoomSiteMap.get(hostname);
+    if (hostZoomFactor) {
+      // exists host setting (x1 zoom)
+      return;
+    }
+    // not exists host setting (addon default zoom)
+    if (!isDefaultZoomFactor(commonSettings.zoomLevelFactor)) {
+      browser.tabs.setZoom(tabId, commonSettings.zoomLevelFactor);
+    }
+  } catch (e) {
+    logging(e);
+  }
+}
   /** 
-   * 
+   * initialize
    */
   const initialize = async () => {
     try {
@@ -166,16 +186,8 @@
       for (let siteName in zoomSiteSettings) {
         zoomSiteMap.set(siteName, zoomSiteSettings[siteName]);
       }
-
-      /** @type {browser.webNavigation.EventUrlFilters} */
-      const URL_FILTER = {
-        url: [{
-          schemes: ["http", "https"]
-        }]
-      }
-
-      browser.webNavigation.onDOMContentLoaded.addListener(onWebNavigationDOMContentLoaded, URL_FILTER);
-      browser.webNavigation.onBeforeNavigate.addListener(onWebNavigationBeforeNavigate);
+      
+      browser.runtime.onMessage.addListener(handleMessage);
       browser.tabs.onZoomChange.addListener(onZoomChanged);
       browser.tabs.onRemoved.addListener(onTabRemoved);
       browser.storage.onChanged.addListener(onStorageChange);

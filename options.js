@@ -11,7 +11,7 @@
   const numberZoomLevelFactorElement = document.getElementById("zoom-level-factor");
 
   /** 
-   * 
+   * initialize
    */
   const initialize = async () => {
     try {
